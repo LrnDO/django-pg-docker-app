@@ -2,9 +2,9 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:  # чтобы можно было запустить вручную
+    tags:
+      - 'v*'        # запускается при пуше тега v1.0, v2.1 и т.п.
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,10 +23,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Extract version from tag
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "TAG_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          else
+            echo "TAG_NAME=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:latest,${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ env.TAG_NAME }}
 
