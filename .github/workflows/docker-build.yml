@@ -56,7 +56,7 @@ jobs:
             export KUBECONFIG=$HOME/.kube/config
             cd /home/ubuntu/django-pg-docker-tutorial || exit 1
             git pull origin main
-            helm upgrade --install django-tutorial ./helm \
+            helm upgrade --install django-tutorial ./DTchart \
               --set app.image=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ env.VERSION }} \
               --namespace default
 
