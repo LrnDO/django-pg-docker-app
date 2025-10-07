@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,20 +34,26 @@ jobs:
           else
             VERSION="latest"
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:$VERSION" >> $GITHUB_ENV
+          echo "Detected VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:$VERSION"
+        shell: bash
 
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ steps.vars.outputs.version }}
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Show version (debug)
+        run: echo "Deploying version ${{ needs.build.outputs.version }}"
+
       - name: Deploy via SSH to Kubernetes master
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -56,7 +64,8 @@ jobs:
             export KUBECONFIG=$HOME/.kube/config
             cd /home/ubuntu/django-pg-docker-tutorial || exit 1
             git pull origin main
+            echo "Deploying image: ${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ needs.build.outputs.version }}"
             helm upgrade --install django-tutorial ./DTchart \
-              --set app.image=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ env.VERSION }} \
+              --set app.image=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ needs.build.outputs.version }} \
               --namespace default
 
