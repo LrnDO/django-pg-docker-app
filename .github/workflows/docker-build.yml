@@ -54,7 +54,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             export KUBECONFIG=/etc/kubernetes/admin.conf
-            cd /home/ubuntu/your-repo-folder || exit 1
+            cd /home/ubuntu/django-pg-docker-tutorial || exit 1
             git pull origin main
             helm upgrade --install django-tutorial ./helm \
               --set app.image=${{ secrets.DOCKERHUB_USERNAME }}/django-pg-tutorial:${{ env.VERSION }} \
